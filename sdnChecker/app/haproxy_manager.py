@@ -7,13 +7,15 @@ import requests
 import time
 
 
-SOCK_PATH='/home/app/'
-HAPROXY_CONF = SOCK_PATH + 'haproxy.conf'
-HAPROXY_PID = SOCK_PATH + 'haproxy.pid'
+HOME = os.getenv('HOME')
+HAPROXY_CONF = HOME + os.sep + 'haproxy.conf'
+HAPROXY_PID = HOME + os.sep + 'haproxy.pid'
+HAPROXY_TEMPLATE = HOME + os.sep + 'haproxy.template'
 
 
 def get_sdn_info():
-    endpoint = 'https://172.30.0.1:443/apis/network.openshift.io/v1/hostsubnets'
+    endpoint = (
+        'https://172.30.0.1:443/apis/network.openshift.io/v1/hostsubnets')
     token_file = '/var/run/secrets/kubernetes.io/serviceaccount/token'
 
     token = open(token_file).read().strip()
@@ -29,7 +31,7 @@ def get_sdn_info():
 
 
 def try_refresh_haproxy_config():
-    new_conf = jinja2.Template(open('./haproxy.template').read()).render(
+    new_conf = jinja2.Template(open(HAPROXY_TEMPLATE).read()).render(
         sdn_info=get_sdn_info())
     old_conf = ''
     if os.path.exists(HAPROXY_CONF):
@@ -44,7 +46,7 @@ def try_refresh_haproxy_config():
         return True
 
 
-def pid_running(pid):        
+def pid_running(pid):
     """ Check For the existence of a unix pid. """
     try:
         os.kill(int(pid), 0)
@@ -68,4 +70,4 @@ def manage_haproxy():
 if __name__=='__main__':
     while True:
         manage_haproxy()
-        time.sleep(10)
+        time.sleep(os.getenv('NODES_FETCH_INTV', 120))
