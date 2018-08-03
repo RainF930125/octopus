@@ -63,6 +63,7 @@ def get_stats():
         return "Some error we cannot handle happened", 500
 
     all_stats = []
+    failed_peers = []
     for i in range(len(mystat)):
         peer_stat = mystat[i]
         if peer_stat == STAT_MY:
@@ -72,5 +73,8 @@ def get_stats():
             stat = requests.get('http://%s:8080/single' % peer_ip).text.strip()
         else:
             stat = '0' * i + 'X' + '0' * (num_stats -1 -i)
+            failed_peers.append(i)
         all_stats.append(stat)
+    for i in failed_peers:
+        all_stats[i] = ''.join([stat[i] for stat in all_stats])
     return '\n'.join(all_stats), 200
