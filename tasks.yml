@@ -1,0 +1,10 @@
+- name: "SDN IP verifcation"
+  check_points:
+    - /etc/origin/node/node-config.yaml nodeIP
+    - oc get hostsubnets -o=jsonpath='{range .items[*]}{.host}{"\t"}{.hostIP}{"\n"}'
+    - ip r get 8.8.8.8
+
+- name: "SDN connectivity checking"
+  check_points:
+    - ip r get ${hostIP of other nodes}
+    - ping based on `oc get hostsubnets -o=jsonpath='{range .items[*]}{.host}{"\t"}{.hostIP}{"\t"}{.subnet}{"\n"}'`, from each node, and ping first IP in subnet
