@@ -19,7 +19,7 @@ docker tag sdnchecker $TEST_DOCKER_REGISTRY/$TEST_NAMESPACE/sdnchecker:v1
 docker push $TEST_DOCKER_REGISTRY/$TEST_NAMESPACE/sdnchecker:v1
 
 echo "!!!"
-echo "!!! NODES_FETCH_INTV change interval to fetch hostsubnets via openshift API, currently not set"
+echo "!!! NODES_FETCH_INTV(default 120s) defines interval to fetch hostsubnets via openshift API, currently not set"
 echo "!!!"
 
 for i in `oc get node -o=jsonpath='{range .items[*]}{.metadata.name}{" "}'`; do

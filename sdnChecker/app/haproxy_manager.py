@@ -27,6 +27,7 @@ def get_sdn_info():
         {'subnet': h['subnet'].replace('/', '-'),
          'sdnIP': str(netaddr.IPNetwork(h['subnet'])[1])}
         for h in hostsubnets]
+    sdn_info.sort(key=lambda x: x['sdnIP'])
     return sdn_info
 
 
