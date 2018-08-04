@@ -1,5 +1,6 @@
 TEST_DOCKER_REGISTRY='harbor.testos39.com'
 TEST_NAMESPACE='zp1dev'
+TEST_DOCKER_REGISTRY_SECRET='zp1dev-pushsecret-harbor-testos39-com'
 
 echo "This script is using TEST_DOCKER_REGISTRY as docker registry, and TEST_NAMESPACE as namespace"
 echo "You should modify this script to use yours"
@@ -7,6 +8,7 @@ echo ""
 
 oc project $TEST_NAMESPACE
 oc create sa sdnchecker
+oc secrets link sdnchecker $TEST_DOCKER_REGISTRY_SECRET --for=pull
 oc adm policy add-cluster-role-to-user system:sdn-reader -z sdnchecker
 oc adm policy add-scc-to-user anyuid -z sdnchecker
 
