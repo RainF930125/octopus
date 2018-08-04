@@ -1,0 +1,13 @@
+arping2 10.0.0.3
+42 bytes from 42:c2:8e:55:93:e6 (10.0.0.3): index=0 time=32.923 usec
+42 bytes from aa:41:d0:b1:e0:11 (10.0.0.3): index=1 time=125.950 usec
+
+
+arping 42:c2:8e:55:93:e6 -T 10.0.0.3
+42 bytes from 10.0.0.3 (42:c2:8e:55:93:e6): icmp_seq=0 time=29.582 usec
+
+
+
+oc create sa vipmonitor
+oc secrets link runasroot zp1dev-pushsecret-harbor-testos39-com --for=pull
+oc adm policy add-scc-to-user privileged -z vipmonitor
