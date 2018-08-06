@@ -35,7 +35,7 @@ if [[ $? -ne 0 ]]; then
     oc label node $TEST_LABEL_NODE dupvipmonitor=true
 fi
 
-sed "s/TEST_DOCKER_REGISTRY/$TEST_DOCKER_REGISTRY/g" dupvipmonitor.yml >> dupvipmonitor-test.yml
+sed "s/TEST_DOCKER_REGISTRY/$TEST_DOCKER_REGISTRY/g" dupvipmonitor.yml > dupvipmonitor-test.yml
 sed -i "s/TEST_NAMESPACE/$TEST_NAMESPACE/g" dupvipmonitor-test.yml
 sed -i "s/TEST_ROUTE/$TEST_ROUTE/g" dupvipmonitor-test.yml
 sed -i "s/TEST_VIPS/$TEST_VIPS/g" dupvipmonitor-test.yml
