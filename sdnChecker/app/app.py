@@ -16,7 +16,6 @@ STAT_PEER_FAIL = '0'
 
 @application.route("/single")
 def get_single_stat():
-    print "get_single_stat"
     endpoint = 'http://localhost:1936/haproxy?stats;csv'
     # echo -n 'admin:password' | base64
     token = 'YWRtaW46cGFzc3dvcmQ='
@@ -24,7 +23,6 @@ def get_single_stat():
 
     stats_info = requests.get(
         endpoint, headers=headers).text.strip().split('\n')[4:-1]
-    print "Raw stats_info is:", stats_info
     serial = ''
     for info in stats_info:
         item = info.split(',')
