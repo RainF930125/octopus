@@ -10,13 +10,15 @@ Node) will have one running on it. Nodes should be labelled with "sdnChecking=tr
 
 Check sdnChecker/deploy.sh for more operation details.
 
-## dupvipmonitor
+## dupVIPMonitor
 
 An application to check whether there are some duplicated VIPs in cluster
 periodically.
 
 Only one pod in deploymentCOnfigs. And for deployment sucessfully, at least
 one node, where has no VIP on it, should be labelled with "dupvipmonitor=true".
+
+Check dupVIPMonitor/deploy.sh for more operation details.
 
 ## PLAN
 
