@@ -1,0 +1,75 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: sdnchecker
+spec:
+  selector:
+      matchLabels:
+        name: sdnchecker
+  template:
+    metadata:
+      labels:
+        name: sdnchecker
+      namespace: TEST_NAMESPACE
+    spec:
+      nodeSelector:
+        sdnChecking: "true"
+      containers:
+      - image: TEST_DOCKER_REGISTRY/TEST_NAMESPACE/sdncheckerv2:v1
+        imagePullPolicy: Always
+        env:
+        - name: NAMESPACE
+          value: TEST_NAMESPACE
+        name: sdnchecker
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: 125m
+            memory: 1Gi
+        securityContext:
+          runAsUser: 1001
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      serviceAccount: sdnchecker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sdnchecker
+  name: sdnchecker
+spec:
+  ports:
+  - name: proxy8080by80
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    name: sdnchecker
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: sdnchecker
+  name: sdnchecker
+  namespace: TEST_NAMESPACE
+spec:
+  host: TEST_ROUTE
+  to:
+    kind: Service
+    name: sdnchecker
+    weight: 100
+  wildcardPolicy: None
