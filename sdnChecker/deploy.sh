@@ -35,6 +35,6 @@ for i in `oc get node -o=jsonpath='{range .items[*]}{.metadata.name}{" "}'`; do
     fi
 done
 
-sed "s/TEST_DOCKER_REGISTRY/$TEST_DOCKER_REGISTRY/g" sdnchecker.yml >> sdnchecker-test.yml
+sed "s/TEST_DOCKER_REGISTRY/$TEST_DOCKER_REGISTRY/g" sdnchecker.yml > sdnchecker-test.yml
 sed -i "s/TEST_NAMESPACE/$TEST_NAMESPACE/g" sdnchecker-test.yml
 oc create -f sdnchecker-test.yml
