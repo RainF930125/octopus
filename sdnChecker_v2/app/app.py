@@ -60,16 +60,6 @@ def get_stats():
     all_pod_ips = get_peers()
     hosts, mystat = get_single_stat().split('\n')
 
-    hosts = hosts.split(',')
-    hosts_num = len(hosts)
-    global ALL_GAUGES
-    if len(ALL_GAUGES) != hosts_num:
-        ALL_GAUGES = [
-            Gauge((LABEL_FMT % (hosts[i], hosts[j])).replace('.', '_'),
-                  (DESC_FMT % (hosts[i], hosts[j])).replace('.', '_'))
-            for i in range(hosts_num - 1)
-                for j in range(i + 1, hosts_num)]
-
     num_stats = len(mystat)
     if num_stats != len(all_pod_ips):
         return "Some error we cannot handle happened", 500
@@ -90,11 +80,7 @@ def get_stats():
         all_stats.append(stat)
     for i in failed_peers:
         all_stats[i] = ''.join([stat[i] for stat in all_stats])
-
-    index = 0
-    for i in range(num_stats):
-        for j in range(i + 1, num_stats):
-            ALL_GAUGES[index].set(all_stats[i][j])
+    return str(hosts + '\n' + '\n'.join(all_stats))
 
 
 def app(environ, start_response):
@@ -102,9 +88,29 @@ def app(environ, start_response):
         data = get_single_stat()
         data_len = len(data)
         data = [data]
+    elif environ.get('PATH_INFO', '/') == '/raw':
+        data = get_stats()
+        data_len = len(data)
+        data = [data]
     else:
-        get_stats()
+        hosts, stats = get_stats().split('\n', 1)
+        hosts = hosts.split(',')
+        num_hosts = len(hosts)
         global ALL_GAUGES
+        if len(ALL_GAUGES) != num_hosts:
+            ALL_GAUGES = [
+                Gauge((LABEL_FMT % (hosts[i], hosts[j])).replace('.', '_'),
+                      (DESC_FMT % (hosts[i], hosts[j])).replace('.', '_'))
+                for i in range(num_hosts - 1)
+                    for j in range(i + 1, num_hosts)]
+
+        stats = stats.split('\n')
+        num_stats = len(stats)
+        index = 0
+        for i in range(num_stats):
+            for j in range(i + 1, num_stats):
+                ALL_GAUGES[index].set(stats[i][j])
+                index += 1
         data = [generate_latest(g) for g in ALL_GAUGES]
         data_len = len(''.join(data))
     start_response("200 OK", [
