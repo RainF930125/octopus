@@ -67,7 +67,7 @@ metadata:
   name: sdnchecker
   namespace: TEST_NAMESPACE
 spec:
-  host: sdncheck.testos39.com
+  host: TEST_ROUTE
   to:
     kind: Service
     name: sdnchecker

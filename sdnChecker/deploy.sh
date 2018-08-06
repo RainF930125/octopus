@@ -1,8 +1,12 @@
 TEST_DOCKER_REGISTRY='harbor.testos39.com'
 TEST_NAMESPACE='zp1dev'
 TEST_DOCKER_REGISTRY_SECRET='zp1dev-pushsecret-harbor-testos39-com'
+TEST_ROUTE='sdncheck.testos39.com'
 
-echo "This script is using TEST_DOCKER_REGISTRY as docker registry, and TEST_NAMESPACE as namespace"
+echo "This script is using:"
+echo "    $TEST_DOCKER_REGISTRY as docker registry"
+echo "    $TEST_NAMESPACE as namespace"
+echo "    $TEST_ROUTE as route"
 echo "You should modify this script to use yours"
 echo ""
 
