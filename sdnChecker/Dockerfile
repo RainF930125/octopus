@@ -2,14 +2,18 @@ FROM centos
 
 ENV HOME=/home/app
 
-RUN yum install -y haproxy python-requests python-netaddr python-jinja2 python-flask python-gunicorn && mkdir -p $HOME && chown -R 1001:0 $HOME
-
 WORKDIR $HOME
+
+RUN yum install -y wget unzip haproxy python-requests python-netaddr python-jinja2 python-gunicorn && \
+    mkdir -p $HOME && \
+    chown -R 1001:0 $HOME && \
+    wget https://github.com/prometheus/client_python/archive/master.zip && \
+    unzip master.zip && \
+    cd client_python-master && \
+    python setup.py install
 
 COPY app/* ./
 
 USER 1001
-
-EXPOSE 8080
 
 CMD ["/bin/bash", "run.sh"]

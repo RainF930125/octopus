@@ -1,2 +1,2 @@
 python haproxy_manager.py &
-gunicorn -b 0.0.0.0:8080 -w 10 app:application
+gunicorn -b 0.0.0.0:8080 -w 4 app:app

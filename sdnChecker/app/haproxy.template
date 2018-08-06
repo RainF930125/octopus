@@ -29,5 +29,5 @@ backend sdnchecker_be
   balance roundrobin
   timeout check 5s
 {% for info in sdn_info %}
-  server {{ info.subnet }} {{ info.sdnIP }}:5000 weight 1 check
+  server {{ info.host }}-{{ info.subnet }} {{ info.sdnIP }}:5000 weight 1 check
 {% endfor %}

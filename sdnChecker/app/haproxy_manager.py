@@ -25,6 +25,7 @@ def get_sdn_info():
         endpoint, headers=headers, verify=False).json()['items']
     sdn_info = [
         {'subnet': h['subnet'].replace('/', '-'),
+         'host': h['host'],
          'sdnIP': str(netaddr.IPNetwork(h['subnet'])[1])}
         for h in hostsubnets]
     sdn_info.sort(key=lambda x: x['sdnIP'])
@@ -71,4 +72,4 @@ def manage_haproxy():
 if __name__=='__main__':
     while True:
         manage_haproxy()
-        time.sleep(os.getenv('NODES_FETCH_INTV', 120))
+        time.sleep(os.getenv('NODES_FETCH_INTV', 300))

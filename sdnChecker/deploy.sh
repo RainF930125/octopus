@@ -1,7 +1,7 @@
 TEST_DOCKER_REGISTRY='harbor.testos39.com'
 TEST_NAMESPACE='zp1dev'
 TEST_DOCKER_REGISTRY_SECRET='zp1dev-pushsecret-harbor-testos39-com'
-TEST_ROUTE='sdncheck.testos39.com'
+TEST_ROUTE='sdnchecker.testos39.com'
 
 echo "This script is using:"
 echo "    $TEST_DOCKER_REGISTRY as docker registry"
@@ -37,4 +37,5 @@ done
 
 sed "s/TEST_DOCKER_REGISTRY/$TEST_DOCKER_REGISTRY/g" sdnchecker.yml > sdnchecker-test.yml
 sed -i "s/TEST_NAMESPACE/$TEST_NAMESPACE/g" sdnchecker-test.yml
+sed -i "s/TEST_ROUTE/$TEST_ROUTE/g" sdnchecker-test.yml
 oc create -f sdnchecker-test.yml
