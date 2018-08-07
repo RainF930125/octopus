@@ -11,9 +11,10 @@ NAMESPACE = os.getenv('NAMESPACE')
 STAT_MY = 'X'
 STAT_PEER_PASS = '1'
 STAT_PEER_FAIL = '0'
-ALL_GAUGES = []
+GAUGE = Gauge(
+    'sdn_connectivity', 'SDN connectivity checking between nodes',
+    ['peer_left', 'peer_right'])
 LABEL_FMT = 'sdn_check_between_%s_AND_%s'
-DESC_FMT = 'SDN connectivity checking between nodes %s and %s'
 
 
 def get_single_stat():
@@ -86,35 +87,21 @@ def get_stats():
 def app(environ, start_response):
     if environ.get('PATH_INFO', '/') == '/single':
         data = get_single_stat()
-        data_len = len(data)
-        data = [data]
     elif environ.get('PATH_INFO', '/') == '/raw':
         data = get_stats()
-        data_len = len(data)
-        data = [data]
     else:
         hosts, stats = get_stats().split('\n', 1)
         hosts = hosts.split(',')
-        num_hosts = len(hosts)
-        global ALL_GAUGES
-        if len(ALL_GAUGES) != num_hosts:
-            ALL_GAUGES = [
-                Gauge((LABEL_FMT % (hosts[i], hosts[j])).replace('.', '_'),
-                      (DESC_FMT % (hosts[i], hosts[j])).replace('.', '_'))
-                for i in range(num_hosts - 1)
-                    for j in range(i + 1, num_hosts)]
-
         stats = stats.split('\n')
         num_stats = len(stats)
-        index = 0
+        global GAUGE
         for i in range(num_stats):
             for j in range(i + 1, num_stats):
-                ALL_GAUGES[index].set(stats[i][j])
-                index += 1
-        data = [generate_latest(g) for g in ALL_GAUGES]
-        data_len = len(''.join(data))
+                GAUGE.labels(peer_left=hosts[i], peer_right=hosts[j]).set(
+                    stats[i][j])
+        data = generate_latest(GAUGE)
     start_response("200 OK", [
         ("Content-Type", CONTENT_TYPE_LATEST),
-        ("Content-Length", str(data_len))
+        ("Content-Length", str(len(data)))
     ])
-    return iter(data)
+    return iter([data])
