@@ -1,0 +1,7 @@
+This is a thin s2i demo.
+
+It doesn't need a pip repo.
+
+To use pip repo, create a requirements.txt with following centent:
+  Flask
+  netifaces

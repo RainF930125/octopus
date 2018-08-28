@@ -1,0 +1,26 @@
+#!/bin/bash
+echo "Before assembling"
+
+rm -rf .git
+rm -rf .s2i
+
+echo "Installing dependencies from local"
+pip install /tmp/src/pkgs/*
+
+# test for save-artifacts
+pushd ${HOME} >/dev/null
+mkdir deps
+date >> deps/output
+
+echo "After custom assemble"
+
+/usr/libexec/s2i/assemble
+rc=$?
+
+if [ $rc -eq 0 ]; then
+    echo "After successful assembling"
+else
+    echo "After failed assembling"
+fi
+
+exit $rc
