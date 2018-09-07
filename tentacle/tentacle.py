@@ -173,25 +173,18 @@ def process_members(method, data, role):
         return 'Not nodemap post yet', 404
 
     nodemap = ast.literal_eval(open('/var/lib/tentacle.dat').read())
-    hostname = os.uname()[1]
     if method == 'POST':
         for member in nodemap[role]:
-            if member == hostname:
-                process_host(hostname, method, data, role)
-            else:
-                endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
-                    'host': member, 'role': role}
-                info = requests.post(endpoint, json=data)
+            endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
+                'host': member, 'role': role}
+            info = requests.post(endpoint, json=data)
         return "Masters/Nodes set done\n"
     else:
         all_info = {}
         for member in nodemap[role]:
-            if member == hostname:
-                info = process_host(hostname, method, data, role)
-            else:
-                endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
-                    'host': member, 'role': role}
-                info = requests.get(endpoint).text.strip()
+            endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
+                'host': member, 'role': role}
+            info = requests.get(endpoint).text.strip()
             all_info[member] = ast.literal_eval(info)
         return str(all_info)
 
