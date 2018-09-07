@@ -3,6 +3,7 @@
 import ast
 from flask import Flask
 from flask import request
+import json
 import os
 import requests
 import ruamel.yaml as yaml
@@ -19,8 +20,24 @@ def update_nodemap():
         If a master also have compute role, you can put it into node list.
     """
 
+    forwarded = 'forwarded' in request.data
+    nodemap = ast.literal_eval(request.data)
+    if forwarded:
+        if type(nodemap) == str:
+            nodemap = json.loads(nodemap)
+    else:
+        hostname = os.uname()[1]
+        nodemap['forwarded'] = True
+        data = json.dumps(nodemap)
+        for master in nodemap['master']:
+            if master ==  hostname:
+                continue
+            endpoint = 'http://%s:9696/nodemap' % master
+            info = requests.post(endpoint, json=data)
+
+    nodemap.pop('forwarded', False)
     with open('/var/lib/tentacle.dat', 'w+') as f:
-        f.write(request.data)
+        f.write(json.dumps(nodemap))
     return 'Nodes map updated'
 
 
