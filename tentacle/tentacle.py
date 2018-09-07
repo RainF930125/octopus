@@ -12,6 +12,32 @@ import ruamel.yaml as yaml
 app = Flask(__name__)
 
 
+def get_attr_chains():
+    res_ovr = (
+        'admissionConfig.pluginConfig.ClusterResourceOverride.configuration.')
+    return {
+        'cpuRequestToLimitPercent': res_ovr + 'cpuRequestToLimitPercent',
+        'memoryRequestToLimitPercent': res_ovr + 'memoryRequestToLimitPercent',
+        'subdomain': 'routingConfig.subdomain',
+        'max-pods': 'kubeletArguments.max-pods',
+        'kube-reserved': 'kubeletArguments.kube-reserved',
+        'system-reserved': 'kubeletArguments.system-reserved'}
+
+
+def get_view_items(role):
+    return {
+        'master': ['cpuRequestToLimitPercent', 'memoryRequestToLimitPercent',
+                   'subdomain'],
+        'node': ['kube-reserved', 'system-reserved', 'max-pods']}.get(role)
+
+
+def get_default_confs(attr):
+    return {
+        'ClusterResourceOverride': {'configuration': {
+            'apiVersion': 'v1', 'kind': 'ClusterResourceOverrideConfig'}}
+        }.get(attr)
+
+
 @app.route('/nodemap', methods=['POST'])
 def update_nodemap():
     """ You should use this API to registry masters and nodes first, e.g.:
@@ -41,49 +67,6 @@ def update_nodemap():
     return 'Nodes map updated'
 
 
-def process_members(method, data, role):
-    if not os.path.exists('/var/lib/tentacle.dat'):
-        return 'Not nodemap post yet', 404
-
-    nodemap = ast.literal_eval(open('/var/lib/tentacle.dat').read())
-    if method == 'POST':
-        for member in nodemap[role]:
-            endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
-                'host': member, 'role': role}
-            info = requests.post(endpoint, json=data)
-        return "Masters/Nodes set done\n"
-    else:
-        all_info = {}
-        for member in nodemap[role]:
-            endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
-                'host': member, 'role': role}
-            info = requests.get(endpoint).text.strip()
-            all_info[member] = ast.literal_eval(info)
-        return str(all_info)
-
-
-@app.route('/masters', methods=['POST', 'GET'])
-def process_masters():
-    """ This API helps to get or set all masters config. """
-
-    method = request.method
-    data = ''
-    if method == 'POST':
-        data = ast.literal_eval(request.data)
-    return process_members(method, data, "master")
-
-
-@app.route('/nodes', methods=['POST', 'GET'])
-def process_nodes():
-    """ This API helps to get or set all nodes config. """
-
-    method = request.method
-    data = ''
-    if method == 'POST':
-        data = ast.literal_eval(request.data)
-    return process_members(method, data, "node")
-
-
 def process_host(host, method, data, role):
     def get_confs(conf):
         ret = {}
@@ -101,6 +84,39 @@ def process_host(host, method, data, role):
             'node': '/etc/origin/node/node-config.yaml',
             'master': '/etc/origin/master/master-config.yaml'}.get(role, '')
 
+    def update_configs(data, confs, conf_file):
+        attr_chains = get_attr_chains()
+        for k in data:
+            if k in attr_chains:
+                cursor = None
+                for item in attr_chains[k].split('.'):
+                    if item == k:
+                        cursor[item] = data[k]
+                    elif cursor:
+                        if item not in cursor:
+                            cursor[item] = get_default_confs(item)
+                        cursor = cursor[item]
+                    else:
+                        cursor = confs[item]
+        set_confs(conf_file, confs)
+
+    def view_configs(data, confs):
+        attr_chains = get_attr_chains()
+        ret = {}
+        for k in data:
+            if k in attr_chains:
+                cursor = None
+                for item in attr_chains[k].split('.'):
+                    if item == k:
+                        ret[k] = cursor[item]
+                    elif cursor:
+                        if item not in cursor:
+                            break
+                        cursor = cursor[item]
+                    else:
+                        cursor = confs[item]
+        return ret
+
     hostname = os.uname()[1]
     if host == hostname:
         conf_file = get_conf_file(role)
@@ -109,45 +125,17 @@ def process_host(host, method, data, role):
             return 'Target config file not exists', 404
 
         if method == 'POST':
+            update_configs(data, confs, conf_file)
             if role == 'master':
-                configuration = {}
-                for k in data:
-                    if k in ('cpuRequestToLimitPercent',
-                             'memoryRequestToLimitPercent'):
-                        configration[k] = data[k]
-                if configuration:
-                    configuration['apiVersion'] = 'v1'
-                    confs['admissionConfig']['pluginConfig'].update(
-                        {'ClusterResourceOverride': configuration})
-                if 'subdomain' in data:
-                    confs['routingConfig']['subdomain'] = data['subdomain']
-                set_confs(conf_file, confs)
                 os.system(
                     'nohup systemctl restart origin-master-api '
                     'origin-master-controllers &')
                 return 'Set master done'
             else:
-                for k in data:
-                    if k in ('max-pods', 'kube-reserved', 'system-reserved'):
-                        confs['kubeletArguments'][k] = data[k]
-                set_confs(conf_file, confs)
                 os.system('nohup systemctl restart origin-node &')
                 return 'Set node done'
         else:
-            if role == 'master':
-                d = {
-                    k: confs['admissionConfig']['pluginConfig'].get(
-                        'ClusterResourceOverride', {}).get(
-                        'configuration', {}).get(k)
-                    for k in ('cpuRequestToLimitPercent',
-                              'memoryRequestToLimitPercent')}
-                d['subdomain'] = confs['routingConfig']['subdomain']
-                d = str(d)
-            else:
-                d = str({
-                    k: confs['kubeletArguments'].get(k)
-                    for k in ('kube-reserved', 'system-reserved', 'max-pods')})
-            return d
+            return str(view_configs(get_view_items(role), confs))
     else:
         # we will work as proxy for request to target host
         if method == 'POST':
@@ -178,6 +166,56 @@ def process_node(host):
     if method == 'POST':
         data = ast.literal_eval(request.data)
     return process_host(host, method, data, "node")
+
+
+def process_members(method, data, role):
+    if not os.path.exists('/var/lib/tentacle.dat'):
+        return 'Not nodemap post yet', 404
+
+    nodemap = ast.literal_eval(open('/var/lib/tentacle.dat').read())
+    hostname = os.uname()[1]
+    if method == 'POST':
+        for member in nodemap[role]:
+            if member == hostname:
+                process_host(hostname, method, data, role)
+            else:
+                endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
+                    'host': member, 'role': role}
+                info = requests.post(endpoint, json=data)
+        return "Masters/Nodes set done\n"
+    else:
+        all_info = {}
+        for member in nodemap[role]:
+            if member == hostname:
+                info = process_host(hostname, method, data, role)
+            else:
+                endpoint = 'http://%(host)s:9696/%(role)s/%(host)s' % {
+                    'host': member, 'role': role}
+                info = requests.get(endpoint).text.strip()
+            all_info[member] = ast.literal_eval(info)
+        return str(all_info)
+
+
+@app.route('/masters', methods=['POST', 'GET'])
+def process_masters():
+    """ This API helps to get or set all masters config. """
+
+    method = request.method
+    data = ''
+    if method == 'POST':
+        data = ast.literal_eval(request.data)
+    return process_members(method, data, "master")
+
+
+@app.route('/nodes', methods=['POST', 'GET'])
+def process_nodes():
+    """ This API helps to get or set all nodes config. """
+
+    method = request.method
+    data = ''
+    if method == 'POST':
+        data = ast.literal_eval(request.data)
+    return process_members(method, data, "node")
 
 
 if __name__ == "__main__":
